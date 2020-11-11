@@ -14,8 +14,8 @@ namespace EntityFrameworkSoftDelete.Implementations
 {
     public class SoftDeleteDbContext : DbContext
     {
-        private const string _isDeletedProperty = "IsDeleted";
-        private static readonly MethodInfo _propertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public).MakeGenericMethod(typeof(bool));
+        private const string IsDeletedProperty = "IsDeleted";
+        private static readonly MethodInfo PropertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public)?.MakeGenericMethod(typeof(bool));
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -23,14 +23,12 @@ namespace EntityFrameworkSoftDelete.Implementations
 
             foreach (var entity in builder.Model.GetEntityTypes())
             {
-                if (typeof(ISoftDelete).IsAssignableFrom(entity.ClrType) == true)
-                {
-                    entity.AddProperty(_isDeletedProperty, typeof(bool));
+                if (typeof(ISoftDeletable).IsAssignableFrom(entity.ClrType) != true) continue;
+                entity.AddProperty(IsDeletedProperty, typeof(bool));
 
-                    builder
-                        .Entity(entity.ClrType)
-                        .HasQueryFilter(GetIsDeletedRestriction(entity.ClrType));
-                }
+                builder
+                    .Entity(entity.ClrType)
+                    .HasQueryFilter(GetIsDeletedRestriction(entity.ClrType));
             }
         }
 
@@ -38,7 +36,7 @@ namespace EntityFrameworkSoftDelete.Implementations
         private static LambdaExpression GetIsDeletedRestriction(Type type)
         {
             var parm = Expression.Parameter(type, "it");
-            var prop = Expression.Call(_propertyMethod, parm, Expression.Constant(_isDeletedProperty));
+            var prop = Expression.Call(PropertyMethod, parm, Expression.Constant(IsDeletedProperty));
             var condition = Expression.MakeBinary(ExpressionType.Equal, prop, Expression.Constant(false));
             var lambda = Expression.Lambda(condition, parm);
             return lambda;
@@ -63,23 +61,23 @@ namespace EntityFrameworkSoftDelete.Implementations
         }
 
 
-        public void Restore(ISoftDelete entity)
+        public void Restore(ISoftDeletable entity)
         {
             var entry = ChangeTracker.Entries().First(en => en.Entity == entity);
-            if ((bool)entry.Property(_isDeletedProperty).CurrentValue == true)
-                entry.Property(_isDeletedProperty).CurrentValue = false;
+            if ((bool)entry.Property(IsDeletedProperty).CurrentValue == true)
+                entry.Property(IsDeletedProperty).CurrentValue = false;
         }
 
-        public void RestoreRange(IEnumerable<ISoftDelete> entitis)
+        public void RestoreRange(IEnumerable<ISoftDeletable> entities)
         {
-            foreach (var entity in entitis)
+            foreach (var entity in entities)
                 Restore(entity);
         }
 
 
         private void OnBeforeSaving()
         {
-            foreach (var entry in ChangeTracker.Entries<ISoftDelete>().ToList())
+            foreach (var entry in ChangeTracker.Entries<ISoftDeletable>().ToList())
             {
                 switch (entry.State)
                 {
@@ -90,6 +88,7 @@ namespace EntityFrameworkSoftDelete.Implementations
                     case EntityState.Deleted:
                         entry.State = EntityState.Modified;
                         entry.CurrentValues["IsDeleted"] = true;
+                        
                         foreach (var navigationEntry in entry.Navigations.Where(n => !n.Metadata.IsDependentToPrincipal()))
                         {
                             if (navigationEntry is CollectionEntry collectionEntry)
@@ -103,10 +102,7 @@ namespace EntityFrameworkSoftDelete.Implementations
                                 switch (collectionEntry.Metadata.ForeignKey.DeleteBehavior)
                                 {
                                     case DeleteBehavior.SetNull:
-                                        foreach (var entity in collectionEntry.CurrentValue)
-                                        {
-                                            collection.Add(Entry(entity));
-                                        }
+                                        collection.AddRange(from object entity in collectionEntry.CurrentValue select Entry(entity));
 
                                         foreach (var dependentEntry in collection)
                                         {
@@ -117,7 +113,6 @@ namespace EntityFrameworkSoftDelete.Implementations
                                         foreach (var entity in collectionEntry.CurrentValue)
                                             Remove(entity);
                                         break;
-
                                 }
                             }
                             else

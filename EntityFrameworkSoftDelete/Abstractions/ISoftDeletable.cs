@@ -4,7 +4,7 @@ using System.Text;
 
 namespace EntityFrameworkSoftDelete.Abstractions
 {
-    public interface ISoftDelete
+    public interface ISoftDeletable
     {
     }
 }
