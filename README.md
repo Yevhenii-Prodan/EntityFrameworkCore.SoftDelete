@@ -18,10 +18,14 @@ And that's all you have to do. You just delete entities as usual, and
 instead of physical deleting it will set `IsDeleted` property to true.
 
 You won't get this entities from your query or includes, but if you want - you can easy
-do it: 
+do it:
 
 ```c#
-var data = DbContext.TableName.IgnoreQueryFilters().ToList();
+// Get with deleted entities
+var data = DbContext.TableName.WithDeleted().ToList();
+
+// Get only deleted 
+var data = DbContext.TableName.OnlyDeleted().ToList();
 ```
 
 
