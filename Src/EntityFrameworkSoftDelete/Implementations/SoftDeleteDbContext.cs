@@ -14,8 +14,11 @@ namespace EntityFrameworkSoftDelete.Implementations
 {
     public class SoftDeleteDbContext : DbContext
     {
-        private const string IsDeletedProperty = "IsDeleted";
         private static readonly MethodInfo PropertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public)?.MakeGenericMethod(typeof(bool));
+
+        public SoftDeleteDbContext(DbContextOptions options) : base(options)
+        {
+        }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -24,7 +27,7 @@ namespace EntityFrameworkSoftDelete.Implementations
             foreach (var entity in builder.Model.GetEntityTypes())
             {
                 if (typeof(ISoftDeletable).IsAssignableFrom(entity.ClrType) != true) continue;
-                entity.AddProperty(IsDeletedProperty, typeof(bool));
+                entity.AddProperty(SoftDeleteConstants.IsDeletedProperty, typeof(bool));
 
                 builder
                     .Entity(entity.ClrType)
@@ -36,7 +39,7 @@ namespace EntityFrameworkSoftDelete.Implementations
         private static LambdaExpression GetIsDeletedRestriction(Type type)
         {
             var parm = Expression.Parameter(type, "it");
-            var prop = Expression.Call(PropertyMethod, parm, Expression.Constant(IsDeletedProperty));
+            var prop = Expression.Call(PropertyMethod, parm, Expression.Constant(SoftDeleteConstants.IsDeletedProperty));
             var condition = Expression.MakeBinary(ExpressionType.Equal, prop, Expression.Constant(false));
             var lambda = Expression.Lambda(condition, parm);
             return lambda;
@@ -64,8 +67,8 @@ namespace EntityFrameworkSoftDelete.Implementations
         public void Restore(ISoftDeletable entity)
         {
             var entry = ChangeTracker.Entries().First(en => en.Entity == entity);
-            if ((bool)entry.Property(IsDeletedProperty).CurrentValue == true)
-                entry.Property(IsDeletedProperty).CurrentValue = false;
+            if ((bool)entry.Property(SoftDeleteConstants.IsDeletedProperty).CurrentValue == true)
+                entry.Property(SoftDeleteConstants.IsDeletedProperty).CurrentValue = false;
         }
 
         public void RestoreRange(IEnumerable<ISoftDeletable> entities)
@@ -73,8 +76,8 @@ namespace EntityFrameworkSoftDelete.Implementations
             foreach (var entity in entities)
                 Restore(entity);
         }
-
-
+        
+        
         private void OnBeforeSaving()
         {
             foreach (var entry in ChangeTracker.Entries<ISoftDeletable>().ToList())
@@ -113,6 +116,27 @@ namespace EntityFrameworkSoftDelete.Implementations
                                         foreach (var entity in collectionEntry.CurrentValue)
                                             Remove(entity);
                                         break;
+                                    case DeleteBehavior.ClientSetNull:
+                                        foreach (var dependentEntry in collection)
+                                        {
+                                            SetNull(dependentEntry, collectionEntry.Metadata.ForeignKey);
+                                        }
+
+                                        break;
+                                    case DeleteBehavior.Restrict:
+                                        // No action required
+                                        break;
+                                    case DeleteBehavior.ClientCascade:
+                                        // No action required
+                                        break;
+                                    case DeleteBehavior.NoAction:
+                                        // No action required
+                                        break;
+                                    case DeleteBehavior.ClientNoAction:
+                                        // No action required
+                                        break;
+                                    default:
+                                        throw new ArgumentOutOfRangeException();
                                 }
                             }
                             else
@@ -129,6 +153,8 @@ namespace EntityFrameworkSoftDelete.Implementations
                 }
             }
         }
+        
+        
 
     }
 }
