@@ -1,4 +1,6 @@
-# entity-framework-soft-delete
+# EfCore-SoftDelete
+
+Based on ef core 3.1.
 
 This code snippet allow to use soft delete only added interface inheritance.
 
