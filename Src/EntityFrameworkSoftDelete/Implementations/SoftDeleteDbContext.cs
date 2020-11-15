@@ -95,7 +95,7 @@ namespace EntityFrameworkSoftDelete.Implementations
                         entry.State = EntityState.Modified;
                         entry.CurrentValues[SoftDeleteConstants.DeletedDateProperty] = DateTime.UtcNow;
                         
-                        foreach (var navigationEntry in entry.Navigations.Where(n => !n.Metadata.IsDependentToPrincipal()))
+                        foreach (var navigationEntry in entry.Navigations.Where(n =>  !((INavigation)n.Metadata).IsOnDependent))
                         {
                             if (navigationEntry is CollectionEntry collectionEntry)
                             {
@@ -105,14 +105,14 @@ namespace EntityFrameworkSoftDelete.Implementations
 
                                 var collection = new List<EntityEntry>();
 
-                                switch (collectionEntry.Metadata.ForeignKey.DeleteBehavior)
+                                switch (((INavigation)collectionEntry.Metadata).ForeignKey.DeleteBehavior)
                                 {
                                     case DeleteBehavior.SetNull:
                                         collection.AddRange(from object entity in collectionEntry.CurrentValue select Entry(entity));
 
                                         foreach (var dependentEntry in collection)
                                         {
-                                            SetNull(dependentEntry, collectionEntry.Metadata.ForeignKey);
+                                            SetNull(dependentEntry, ((INavigation)collectionEntry.Metadata).ForeignKey);
                                         }
                                         break;
                                     
