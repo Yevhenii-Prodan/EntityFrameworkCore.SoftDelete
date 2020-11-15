@@ -1,7 +1,10 @@
-﻿namespace EntityFrameworkSoftDelete
+﻿using System;
+
+namespace EntityFrameworkSoftDelete
 {
-    public static class SoftDeleteConstants
+    internal static class SoftDeleteConstants
     {
         public const string IsDeletedProperty = "IsDeleted";
+        public const string DeletedDateProperty = "DeletedDate";
     }
 }

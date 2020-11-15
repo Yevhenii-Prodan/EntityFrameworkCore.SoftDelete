@@ -14,7 +14,7 @@ namespace EntityFrameworkSoftDelete.Implementations
 {
     public class SoftDeleteDbContext : DbContext
     {
-        private static readonly MethodInfo PropertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public)?.MakeGenericMethod(typeof(bool));
+        private static readonly MethodInfo PropertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public)?.MakeGenericMethod(typeof(DateTime?));
 
         public SoftDeleteDbContext(DbContextOptions options) : base(options)
         {
@@ -27,7 +27,7 @@ namespace EntityFrameworkSoftDelete.Implementations
             foreach (var entity in builder.Model.GetEntityTypes())
             {
                 if (typeof(ISoftDeletable).IsAssignableFrom(entity.ClrType) != true) continue;
-                entity.AddProperty(SoftDeleteConstants.IsDeletedProperty, typeof(bool));
+                entity.AddProperty(SoftDeleteConstants.DeletedDateProperty, typeof(DateTime?));
 
                 builder
                     .Entity(entity.ClrType)
@@ -39,8 +39,8 @@ namespace EntityFrameworkSoftDelete.Implementations
         private static LambdaExpression GetIsDeletedRestriction(Type type)
         {
             var parm = Expression.Parameter(type, "it");
-            var prop = Expression.Call(PropertyMethod, parm, Expression.Constant(SoftDeleteConstants.IsDeletedProperty));
-            var condition = Expression.MakeBinary(ExpressionType.Equal, prop, Expression.Constant(false));
+            var prop = Expression.Call(PropertyMethod, parm, Expression.Constant(SoftDeleteConstants.DeletedDateProperty));
+            var condition = Expression.MakeBinary(ExpressionType.Equal, prop, Expression.Constant(null));
             var lambda = Expression.Lambda(condition, parm);
             return lambda;
         }
@@ -67,11 +67,11 @@ namespace EntityFrameworkSoftDelete.Implementations
         public void Restore(ISoftDeletable entity)
         {
             var entry = ChangeTracker.Entries().First(en => en.Entity == entity);
-            if ((bool)entry.Property(SoftDeleteConstants.IsDeletedProperty).CurrentValue == true)
-                entry.Property(SoftDeleteConstants.IsDeletedProperty).CurrentValue = false;
+            if ((DateTime?)entry.Property(SoftDeleteConstants.DeletedDateProperty).CurrentValue != null)
+                entry.Property(SoftDeleteConstants.DeletedDateProperty).CurrentValue = null;
         }
 
-        public void RestoreRange(IEnumerable<ISoftDeletable> entities)
+        public void RestoreRange(params ISoftDeletable[] entities)
         {
             foreach (var entity in entities)
                 Restore(entity);
@@ -85,12 +85,12 @@ namespace EntityFrameworkSoftDelete.Implementations
                 switch (entry.State)
                 {
                     case EntityState.Added:
-                        entry.CurrentValues["IsDeleted"] = false;
+                        entry.CurrentValues[SoftDeleteConstants.DeletedDateProperty] = null;
                         break;
 
                     case EntityState.Deleted:
                         entry.State = EntityState.Modified;
-                        entry.CurrentValues["IsDeleted"] = true;
+                        entry.CurrentValues[SoftDeleteConstants.DeletedDateProperty] = DateTime.UtcNow;
                         
                         foreach (var navigationEntry in entry.Navigations.Where(n => !n.Metadata.IsDependentToPrincipal()))
                         {
