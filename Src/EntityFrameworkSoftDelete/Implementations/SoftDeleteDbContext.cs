@@ -14,8 +14,6 @@ namespace EntityFrameworkSoftDelete.Implementations
 {
     public class SoftDeleteDbContext : DbContext
     {
-        private static readonly MethodInfo PropertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public)?.MakeGenericMethod(typeof(DateTime?));
-
         public SoftDeleteDbContext(DbContextOptions options) : base(options)
         {
         }
@@ -63,6 +61,9 @@ namespace EntityFrameworkSoftDelete.Implementations
         }
 
         #region Private
+        
+        private static readonly MethodInfo PropertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public)?.MakeGenericMethod(typeof(DateTime?));
+
 
         private static LambdaExpression GetIsDeletedRestriction(Type type)
         {
