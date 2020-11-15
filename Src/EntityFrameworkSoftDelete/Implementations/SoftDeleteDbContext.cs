@@ -112,16 +112,17 @@ namespace EntityFrameworkSoftDelete.Implementations
                                             SetNull(dependentEntry, collectionEntry.Metadata.ForeignKey);
                                         }
                                         break;
+                                    
                                     case DeleteBehavior.Cascade:
                                         foreach (var entity in collectionEntry.CurrentValue)
                                             Remove(entity);
                                         break;
+                                    
+                                    // We only have to process changes in database,
+                                    // about changes on the client side the ef core will take care.
+                                    
                                     case DeleteBehavior.ClientSetNull:
-                                        foreach (var dependentEntry in collection)
-                                        {
-                                            SetNull(dependentEntry, collectionEntry.Metadata.ForeignKey);
-                                        }
-
+                                        // No Action required
                                         break;
                                     case DeleteBehavior.Restrict:
                                         // No action required
