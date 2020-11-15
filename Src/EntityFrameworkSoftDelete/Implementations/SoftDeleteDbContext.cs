@@ -154,8 +154,5 @@ namespace EntityFrameworkSoftDelete.Implementations
                 }
             }
         }
-        
-        
-
     }
 }
