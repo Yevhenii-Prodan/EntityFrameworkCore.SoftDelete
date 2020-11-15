@@ -19,6 +19,33 @@ namespace EntityFrameworkSoftDelete.Implementations
         public SoftDeleteDbContext(DbContextOptions options) : base(options)
         {
         }
+        
+        
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            OnBeforeSaving();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            OnBeforeSaving();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        
+        
+        public void Restore(ISoftDeletable entity)
+        {
+            var entry = ChangeTracker.Entries().First(en => en.Entity == entity);
+            if ((DateTime?)entry.Property(SoftDeleteConstants.DeletedDateProperty).CurrentValue != null)
+                entry.Property(SoftDeleteConstants.DeletedDateProperty).CurrentValue = null;
+        }
+
+        public void RestoreRange(params ISoftDeletable[] entities)
+        {
+            foreach (var entity in entities)
+                Restore(entity);
+        }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -35,6 +62,7 @@ namespace EntityFrameworkSoftDelete.Implementations
             }
         }
 
+        #region Private
 
         private static LambdaExpression GetIsDeletedRestriction(Type type)
         {
@@ -45,36 +73,10 @@ namespace EntityFrameworkSoftDelete.Implementations
             return lambda;
         }
 
-        public override int SaveChanges(bool acceptAllChangesOnSuccess)
-        {
-            OnBeforeSaving();
-            return base.SaveChanges(acceptAllChangesOnSuccess);
-        }
-
-        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            OnBeforeSaving();
-            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-        }
-
         private void SetNull(EntityEntry entry, IForeignKey fk)
         {
             foreach (var property in fk.Properties)
                 entry.Property(property.Name).CurrentValue = null;
-        }
-
-
-        public void Restore(ISoftDeletable entity)
-        {
-            var entry = ChangeTracker.Entries().First(en => en.Entity == entity);
-            if ((DateTime?)entry.Property(SoftDeleteConstants.DeletedDateProperty).CurrentValue != null)
-                entry.Property(SoftDeleteConstants.DeletedDateProperty).CurrentValue = null;
-        }
-
-        public void RestoreRange(params ISoftDeletable[] entities)
-        {
-            foreach (var entity in entities)
-                Restore(entity);
         }
         
         
@@ -154,5 +156,7 @@ namespace EntityFrameworkSoftDelete.Implementations
                 }
             }
         }
+
+        #endregion
     }
 }
