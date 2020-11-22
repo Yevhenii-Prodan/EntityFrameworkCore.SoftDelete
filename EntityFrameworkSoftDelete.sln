@@ -6,6 +6,13 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFrameworkSoftDelete", "Src\EntityFrameworkSoftDelete\EntityFrameworkSoftDelete.csproj", "{98A090B3-20B6-4161-B12D-626EB0212C7B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Src", "Src", "{5D087FA7-F3BB-4308-BFFE-B671CAC2F06A}"
+ProjectSection(SolutionItems) = preProject
+	README.md = README.md
+EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{66F3C1EE-0976-42D7-9EEB-595D9E59E4A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoftDelete.Tests", "Tests\SoftDelete.Tests\SoftDelete.Tests.csproj", "{456B7D65-5EFF-4416-B46E-93B8F9094D75}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
