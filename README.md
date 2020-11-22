@@ -39,7 +39,7 @@ DbContext.TableName.Restore(entity);
 
 // resotre range
 var entities =  DbContext.TableName.OnlyDeleted().ToList();
-DbContext.TableName.Restore(entities);
+DbContext.TableName.RestoreRange(entities);
 ```
 
 
