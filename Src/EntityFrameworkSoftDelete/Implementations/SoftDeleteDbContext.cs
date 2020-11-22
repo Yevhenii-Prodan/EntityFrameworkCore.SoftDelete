@@ -12,25 +12,28 @@ using System.Threading.Tasks;
 
 namespace EntityFrameworkSoftDelete.Implementations
 {
-    public class SoftDeleteDbContext : DbContext
+    public abstract class SoftDeleteDbContext : DbContext
     {
-        public SoftDeleteDbContext(DbContextOptions options) : base(options)
+        protected SoftDeleteDbContext(DbContextOptions options) : base(options)
         {
+            
         }
-        
-        
+
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {
-            OnBeforeSaving();
-            return base.SaveChanges(acceptAllChangesOnSuccess);
+            var entriesToDetached = OnBeforeSaving();
+            var result =  base.SaveChanges(acceptAllChangesOnSuccess);
+            DetachEntries(entriesToDetached);
+            return result;
         }
 
         public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken))
         {
-            OnBeforeSaving();
-            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            var entriesToDetached = OnBeforeSaving();
+            var result =  base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            DetachEntries(entriesToDetached);
+            return result;
         }
-        
         
         public void Restore(ISoftDeletable entity)
         {
@@ -56,7 +59,8 @@ namespace EntityFrameworkSoftDelete.Implementations
 
                 builder
                     .Entity(entity.ClrType)
-                    .HasQueryFilter(GetIsDeletedRestriction(entity.ClrType));
+                    .HasQueryFilter(GetIsDeletedRestriction(entity.ClrType))
+                    .HasIndex(SoftDeleteConstants.DeletedDateProperty);
             }
         }
 
@@ -73,17 +77,30 @@ namespace EntityFrameworkSoftDelete.Implementations
             var lambda = Expression.Lambda(condition, parm);
             return lambda;
         }
+        
+        private void DetachEntries(IEnumerable<EntityEntry<ISoftDeletable>> entries)
+        {
+            foreach (var entityEntry in entries)
+            {
+                entityEntry.State = EntityState.Detached;
+            }
+        }
 
         private void SetNull(EntityEntry entry, IForeignKey fk)
         {
             foreach (var property in fk.Properties)
                 entry.Property(property.Name).CurrentValue = null;
         }
-        
-        
-        private void OnBeforeSaving()
+
+
+        private IEnumerable<EntityEntry<ISoftDeletable>> OnBeforeSaving()
         {
-            foreach (var entry in ChangeTracker.Entries<ISoftDeletable>().ToList())
+
+            var softDeleteEntries = ChangeTracker.Entries<ISoftDeletable>().ToList();
+            var entriesToDetached = softDeleteEntries.Where(entry => entry.State == EntityState.Deleted).ToList(); 
+            
+            
+            foreach (var entry in softDeleteEntries)
             {
                 switch (entry.State)
                 {
@@ -97,64 +114,69 @@ namespace EntityFrameworkSoftDelete.Implementations
                         
                         foreach (var navigationEntry in entry.Navigations.Where(n => !n.Metadata.IsDependentToPrincipal()))
                         {
-                            if (navigationEntry is CollectionEntry collectionEntry)
+                            switch (navigationEntry)
                             {
-                                collectionEntry.Load();
-                                if (collectionEntry.CurrentValue == null)
-                                    continue;
-
-                                var collection = new List<EntityEntry>();
-
-                                switch (collectionEntry.Metadata.ForeignKey.DeleteBehavior)
-                                {
-                                    case DeleteBehavior.SetNull:
-                                        collection.AddRange(from object entity in collectionEntry.CurrentValue select Entry(entity));
-
-                                        foreach (var dependentEntry in collection)
-                                        {
-                                            SetNull(dependentEntry, collectionEntry.Metadata.ForeignKey);
-                                        }
-                                        break;
-                                    
-                                    case DeleteBehavior.Cascade:
-                                        foreach (var entity in collectionEntry.CurrentValue)
-                                            Remove(entity);
-                                        break;
-                                    
-                                    // We only have to process changes in database,
-                                    // about changes on the client side the ef core will take care.
-                                    
-                                    case DeleteBehavior.ClientSetNull:
-                                        // No Action required
-                                        break;
-                                    case DeleteBehavior.Restrict:
-                                        // No action required
-                                        break;
-                                    case DeleteBehavior.ClientCascade:
-                                        // No action required
-                                        break;
-                                    case DeleteBehavior.NoAction:
-                                        // No action required
-                                        break;
-                                    case DeleteBehavior.ClientNoAction:
-                                        // No action required
-                                        break;
-                                    default:
-                                        throw new ArgumentOutOfRangeException();
-                                }
-                            }
-                            else
-                            {
-                                var dependentEntry = navigationEntry.CurrentValue;
-                                if (dependentEntry != null)
-                                {
-                                    Remove(Entry(dependentEntry));
-                                }
-
+                                case CollectionEntry collectionEntry:
+                                    ProcessEntry(collectionEntry);
+                                    break;
+                                case ReferenceEntry referenceEntry:
+                                    ProcessEntry(referenceEntry);
+                                    break;
                             }
                         }
                         break;
                 }
+            }
+
+            return entriesToDetached;
+        }
+        
+        private void ProcessEntry(CollectionEntry collectionEntry)
+        {
+            collectionEntry.Load();
+            if (collectionEntry.CurrentValue == null)
+                return;
+
+            var collection = new List<EntityEntry>();
+
+            switch (collectionEntry.Metadata.ForeignKey.DeleteBehavior)
+            {
+                // We only have to process changes in database,
+                // about changes on the client side the ef core will take care.
+                case DeleteBehavior.SetNull:
+                    collection.AddRange(from object entity in collectionEntry.CurrentValue select Entry(entity));
+                    foreach (var dependentEntry in collection)
+                        SetNull(dependentEntry, collectionEntry.Metadata.ForeignKey);
+                    break;
+                                    
+                case DeleteBehavior.Cascade:
+                    foreach (var entity in collectionEntry.CurrentValue)
+                        Remove(entity);
+                    break;
+                                    
+                // Do nothing for other cases
+
+            }
+        }
+
+        private void ProcessEntry(ReferenceEntry referenceEntry)
+        {
+            referenceEntry.Load();
+            var dependentEntry = referenceEntry.CurrentValue;
+            if (dependentEntry == null)
+                return;
+
+            switch (referenceEntry.Metadata.ForeignKey.DeleteBehavior)
+            {
+                // We only have to process changes in database,
+                // about changes on the client side the ef core will take care.
+                case DeleteBehavior.Cascade:
+                    Remove(Entry(dependentEntry));
+                    break;
+                case DeleteBehavior.SetNull:
+                    SetNull(Entry(dependentEntry), referenceEntry.Metadata.ForeignKey);
+                    break;
+                // Do nothing for other cases
             }
         }
 
