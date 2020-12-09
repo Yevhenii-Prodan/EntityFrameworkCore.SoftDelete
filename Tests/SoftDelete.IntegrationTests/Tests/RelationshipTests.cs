@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Shouldly;
 using SoftDelete.IntegrationTests.Helpers;
@@ -86,5 +87,9 @@ namespace SoftDelete.IntegrationTests.Tests
             authorReviewFromDb.ShouldBeNull();  
 
         }
+        public Task CascadeDelete_ManyToMany() => throw new NotImplementedException();
+        public Task SetNull_OneToMany() => throw new NotImplementedException();
+        public Task SetNull_OneToOne() => throw new NotImplementedException();
+
     }
 }
