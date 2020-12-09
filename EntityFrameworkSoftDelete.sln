@@ -12,7 +12,7 @@ EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{66F3C1EE-0976-42D7-9EEB-595D9E59E4A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoftDelete.Tests", "Tests\SoftDelete.Tests\SoftDelete.Tests.csproj", "{456B7D65-5EFF-4416-B46E-93B8F9094D75}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoftDelete.IntegrationTests", "Tests\SoftDelete.IntegrationTests\SoftDelete.IntegrationTests.csproj", "{456B7D65-5EFF-4416-B46E-93B8F9094D75}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

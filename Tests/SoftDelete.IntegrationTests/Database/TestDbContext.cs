@@ -1,8 +1,8 @@
 ﻿using EntityFrameworkSoftDelete.Implementations;
 using Microsoft.EntityFrameworkCore;
-using TestProject1.Database.Entities;
+using SoftDelete.IntegrationTests.Database.Entities;
 
-namespace TestProject1.Database
+namespace SoftDelete.IntegrationTests.Database
 {
     public class TestDbContext : SoftDeleteDbContext
     {
@@ -11,5 +11,8 @@ namespace TestProject1.Database
         }
         
         public DbSet<BookEntity> Books { get; set; }
+        public DbSet<AuthorEntity> Authors { get; set; }
+        public DbSet<ReviewEntity> Reviews { get; set; }
+        public DbSet<AuthorReviewEntity> AuthorReviews { get; set; }
     }
 }

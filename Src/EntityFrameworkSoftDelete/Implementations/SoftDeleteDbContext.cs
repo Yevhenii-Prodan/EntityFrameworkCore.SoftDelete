@@ -171,7 +171,7 @@ namespace EntityFrameworkSoftDelete.Implementations
                 // We only have to process changes in database,
                 // about changes on the client side the ef core will take care.
                 case DeleteBehavior.Cascade:
-                    Remove(Entry(dependentEntry));
+                    Remove(dependentEntry);
                     break;
                 case DeleteBehavior.SetNull:
                     SetNull(Entry(dependentEntry), referenceEntry.Metadata.ForeignKey);

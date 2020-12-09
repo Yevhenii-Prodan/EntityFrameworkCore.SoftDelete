@@ -5,10 +5,11 @@
 
         <IsPackable>false</IsPackable>
 
-        <RootNamespace>TestProject1</RootNamespace>
+        <RootNamespace>SoftDelete.IntegrationTests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Bogus" Version="32.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="3.1.10" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
         <PackageReference Include="Shouldly" Version="4.0.1" />

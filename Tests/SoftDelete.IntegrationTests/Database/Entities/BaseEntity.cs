@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TestProject1.Database.Entities
+namespace SoftDelete.IntegrationTests.Database.Entities
 {
     public abstract class BaseEntity
     {
