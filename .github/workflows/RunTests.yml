@@ -19,7 +19,7 @@ jobs:
         dotnet-version: 3.1.301
         
     - name: Go to test directory
-      run: cd ./Tests/SoftDelete.Tests/
+      run: cd ./Tests/SoftDelete.IntegrationTests/
     - name: Install dependencies
       run: dotnet restore
     - name: Build
