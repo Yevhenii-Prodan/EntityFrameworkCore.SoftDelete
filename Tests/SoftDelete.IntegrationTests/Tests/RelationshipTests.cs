@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Shouldly;
+using SoftDelete.IntegrationTests.Database.Entities;
 using SoftDelete.IntegrationTests.Helpers;
 using Xunit;
 
@@ -87,9 +88,89 @@ namespace SoftDelete.IntegrationTests.Tests
             authorReviewFromDb.ShouldBeNull();  
 
         }
-        public Task CascadeDelete_ManyToMany() => throw new NotImplementedException();
-        public Task SetNull_OneToMany() => throw new NotImplementedException();
-        public Task SetNull_OneToOne() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task CascadeDelete_ManyToMany()
+        {
+            var book = TestHelper.CreateBook;
+            var user = TestHelper.CreateUser;
+
+            var bookId = book.Id;
+
+
+            var bookUser = new UserBookEntity
+            {
+                Book = book,
+                User = user
+            };
+
+
+            await DbContext.AddRangeAsync(book, user, bookUser);
+            await DbContext.SaveChangesAsync();
+
+
+            DbContext.Remove(book);
+            await DbContext.SaveChangesAsync();
+
+            var userFromDb = await DbContext.Users.FindAsync(user.Id);
+            
+            userFromDb.Books.FirstOrDefault(x => x.BookId == bookId).ShouldBeNull();
+
+
+        }
+        [Fact]
+        public async Task SetNull_OneToMany()
+        {
+            var book = TestHelper.CreateBook;
+            var user = TestHelper.CreateUser;
+
+            user.FavouriteBook = book;
+
+            await DbContext.AddRangeAsync(book, user);
+            await DbContext.SaveChangesAsync();
+            
+            DbContext.Remove(book);
+            await DbContext.SaveChangesAsync();
+            
+            user.FavouriteBook.ShouldBeNull();
+            user.FavouriteBookId.ShouldBeNull();
+            
+            var userFromDb = await DbContext.Users.FindAsync(user.Id);
+            
+            userFromDb.FavouriteBook.ShouldBeNull();
+            userFromDb.FavouriteBookId.ShouldBeNull();
+            
+        }
+        
+        
+        [Fact]
+        public async Task SetNull_OneToOne()
+        {
+            var author = TestHelper.CreateAuthor;
+
+            var book = TestHelper.CreateBook;
+
+            book.Author = author;
+            author.MainBook = book;
+            
+            
+            await DbContext.AddRangeAsync(author, book);
+
+            await DbContext.SaveChangesAsync();
+
+
+            DbContext.Books.Remove(book);
+            await DbContext.SaveChangesAsync();
+            
+            author.MainBook.ShouldBeNull();
+            author.MainBookId.ShouldBeNull();
+
+            var authorFromDb = await DbContext.Authors.FindAsync(author.Id);
+            
+            
+            authorFromDb.MainBook.ShouldBeNull();
+            authorFromDb.MainBookId.ShouldBeNull();
+        }
 
     }
 }

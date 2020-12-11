@@ -16,6 +16,14 @@ namespace SoftDelete.IntegrationTests.Database.Entities
 
         public AuthorReviewEntity AuthorReviewEntity { get; set; }
 
+        public AuthorEntity AuthorMainBook { get; set; }
+        
+        
+        
         public IList<ReviewEntity> Reviews { get; set; }
+
+        public IList<UserBookEntity> Users { get; set; }
+
+        public IList<UserEntity> UserFavourites { get; set; }
     }
 }

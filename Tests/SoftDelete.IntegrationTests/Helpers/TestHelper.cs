@@ -10,6 +10,7 @@ namespace SoftDelete.IntegrationTests.Helpers
         private static readonly Faker<ReviewEntity> ReviewFaker;
         private static readonly Faker<BookEntity> BookFaker;
         private static readonly Faker<AuthorReviewEntity> AuthorReviewFaker;
+        private static readonly Faker<UserEntity> UserFaker;
 
         static TestHelper()
         {
@@ -31,6 +32,11 @@ namespace SoftDelete.IntegrationTests.Helpers
             AuthorReviewFaker = new Faker<AuthorReviewEntity>();
             AuthorReviewFaker.RuleFor(x => x.Text, x => x.Lorem.Paragraph());
             AuthorReviewFaker.RuleFor(x => x.Id, x => new Guid());
+            
+            
+            UserFaker = new Faker<UserEntity>();
+            UserFaker.RuleFor(x => x.Name, x => x.Name.FullName());
+            UserFaker.RuleFor(x => x.Id, x => new Guid());
 
         }
 
@@ -38,5 +44,6 @@ namespace SoftDelete.IntegrationTests.Helpers
         public static BookEntity CreateBook => BookFaker.Generate();
         public static ReviewEntity CreateReview => ReviewFaker.Generate();
         public static AuthorReviewEntity CreateAuthorReview => AuthorReviewFaker.Generate();
+        public static UserEntity CreateUser => UserFaker.Generate();
     }
 }
