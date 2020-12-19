@@ -88,15 +88,15 @@ namespace EntityFrameworkSoftDelete.Implementations
 
         #region Private
         
-        private static readonly MethodInfo PropertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public)?.MakeGenericMethod(typeof(DateTime?));
 
 
         private static LambdaExpression GetIsDeletedRestriction(Type type)
         {
-            var parm = Expression.Parameter(type, "it");
-            var prop = Expression.Call(PropertyMethod, parm, Expression.Constant(SoftDeleteConstants.DeletedDateProperty));
+            MethodInfo propertyMethod = typeof(EF).GetMethod(nameof(EF.Property), BindingFlags.Static | BindingFlags.Public)?.MakeGenericMethod(typeof(DateTime?));
+            var parameterExpression = Expression.Parameter(type, "it");
+            var prop = Expression.Call(propertyMethod!, parameterExpression, Expression.Constant(SoftDeleteConstants.DeletedDateProperty));
             var condition = Expression.MakeBinary(ExpressionType.Equal, prop, Expression.Constant(null));
-            var lambda = Expression.Lambda(condition, parm);
+            var lambda = Expression.Lambda(condition, parameterExpression);
             return lambda;
         }
         
