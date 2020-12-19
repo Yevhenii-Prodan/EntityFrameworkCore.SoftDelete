@@ -33,12 +33,28 @@ namespace EntityFrameworkSoftDelete
             softDeleteContext.Restore(entity);
         }
         
-        public static void RestoreRange<TEntity>(this DbSet<TEntity> dbSet, params TEntity[] entities) where TEntity : class, ISoftDeletable
+        public static void RestoreRange<TEntity>(this DbSet<TEntity> dbSet, [NotNull] params TEntity[] entities) where TEntity : class, ISoftDeletable
         {
             var context = dbSet.GetService<ICurrentDbContext>().Context;
             var softDeleteContext = (SoftDeleteDbContext) context;
             softDeleteContext.RestoreRange(entities);
         }
+        
+        public static void HardRemove<TEntity>(this DbSet<TEntity> dbSet, [NotNull] TEntity entity) where TEntity : class, ISoftDeletable
+        {
+            var context = dbSet.GetService<ICurrentDbContext>().Context;
+            var softDeleteContext = (SoftDeleteDbContext) context;
+            softDeleteContext.HardRemove(entity);
+        }
+        
+        public static void HardRemoveRange<TEntity>(this DbSet<TEntity> dbSet, [NotNull] params TEntity[] entities) where TEntity : class, ISoftDeletable
+        {
+            var context = dbSet.GetService<ICurrentDbContext>().Context;
+            var softDeleteContext = (SoftDeleteDbContext) context;
+            softDeleteContext.HardRemoveRange(entities);
+        }
+        
+        
 
     }
 }

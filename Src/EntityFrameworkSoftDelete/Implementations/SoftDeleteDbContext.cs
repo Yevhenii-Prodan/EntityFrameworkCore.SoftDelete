@@ -9,6 +9,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace EntityFrameworkSoftDelete.Implementations
 {
@@ -27,11 +29,12 @@ namespace EntityFrameworkSoftDelete.Implementations
             return result;
         }
 
-        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default(CancellationToken))
         {
             var entriesToDetached = OnBeforeSaving();
-            var result =  base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            var result =  await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
             DetachEntries(entriesToDetached);
+
             return result;
         }
         
@@ -46,6 +49,25 @@ namespace EntityFrameworkSoftDelete.Implementations
         {
             foreach (var entity in entities)
                 Restore(entity);
+        }
+
+        public void HardRemove(ISoftDeletable entity)
+        {
+            var entry = ChangeTracker.Entries().First(en => en.Entity == entity);
+            
+            // a hack to detect hard deleted entities
+            entry.CurrentValues[SoftDeleteConstants.DeletedDateProperty] = DateTime.MinValue;
+            
+            Remove(entity);
+
+        }
+
+        public void HardRemoveRange(params ISoftDeletable[] entities)
+        {
+            foreach (var entity in entities)
+            {
+                HardRemove(entity);
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -96,12 +118,17 @@ namespace EntityFrameworkSoftDelete.Implementations
         private IEnumerable<EntityEntry<ISoftDeletable>> OnBeforeSaving()
         {
 
-            var softDeleteEntries = ChangeTracker.Entries<ISoftDeletable>().ToList();
+            var softDeleteEntries = ChangeTracker.Entries<ISoftDeletable>()
+                // a hack to detect hard deleted entities
+                .Where(entry => (DateTime?)entry.Property(SoftDeleteConstants.DeletedDateProperty).CurrentValue != DateTime.MinValue)
+                .ToList();
+            
             var entriesToDetached = softDeleteEntries.Where(entry => entry.State == EntityState.Deleted).ToList(); 
             
             
             foreach (var entry in softDeleteEntries)
             {
+                
                 switch (entry.State)
                 {
                     case EntityState.Added:
@@ -114,6 +141,7 @@ namespace EntityFrameworkSoftDelete.Implementations
                         
                         foreach (var navigationEntry in entry.Navigations.Where(n => !n.Metadata.IsDependentToPrincipal()))
                         {
+                            
                             switch (navigationEntry)
                             {
                                 case CollectionEntry collectionEntry:
@@ -133,7 +161,9 @@ namespace EntityFrameworkSoftDelete.Implementations
         
         private void ProcessEntry(CollectionEntry collectionEntry)
         {
-            collectionEntry.Load();
+            if (!collectionEntry.IsLoaded)
+                collectionEntry.Load();
+            
             if (collectionEntry.CurrentValue == null)
                 return;
 
@@ -161,7 +191,9 @@ namespace EntityFrameworkSoftDelete.Implementations
 
         private void ProcessEntry(ReferenceEntry referenceEntry)
         {
-            referenceEntry.Load();
+            if (!referenceEntry.IsLoaded)
+                referenceEntry.Load();
+            
             var dependentEntry = referenceEntry.CurrentValue;
             if (dependentEntry == null)
                 return;
