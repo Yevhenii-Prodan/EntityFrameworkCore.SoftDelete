@@ -1,4 +1,4 @@
-# EfCore-SoftDelete
+# EntityFrameworkCore.SoftDelete
 
 Based on ef core 3.1.
 
@@ -50,3 +50,11 @@ it also possible, if you add `OnDelete(DeleteBehaviour.SetNull)`
  With `Cascade` it will call the `Delete` method on the related entities.
  
  With `SetNull` it will set null in the related entities.
+
+### Hard delete
+
+If you want to hardly remove entity that inherits `ISoftDeletable` interface, you can easy do it:
+
+```c#
+DbContext.HardRemove(entity);
+```
