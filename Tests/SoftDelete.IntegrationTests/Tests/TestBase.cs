@@ -13,6 +13,7 @@ namespace SoftDelete.IntegrationTests.Tests
         {
             var options = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                // .UseSqlServer("Server=.\\SQLEXPRESS;Database=soft-delete-test;Trusted_Connection=True;MultipleActiveResultSets=true")
                 .Options;
 
             DbContext = new TestDbContext(options);

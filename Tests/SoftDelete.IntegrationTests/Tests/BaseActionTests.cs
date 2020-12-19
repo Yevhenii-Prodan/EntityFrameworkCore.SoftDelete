@@ -16,7 +16,10 @@ namespace SoftDelete.IntegrationTests.Tests
         public async Task CanSoftDelete()
         {
             var book = TestHelper.CreateBook;
+            var author = TestHelper.CreateAuthor;
+            book.Author = author;
             
+            await DbContext.Authors.AddAsync(author);
             await DbContext.Books.AddAsync(book);
             await DbContext.SaveChangesAsync();
 
@@ -37,7 +40,10 @@ namespace SoftDelete.IntegrationTests.Tests
         public async Task CanRestore()
         {
             var book = TestHelper.CreateBook;
-
+            var author = TestHelper.CreateAuthor;
+            book.Author = author;
+            
+            await DbContext.Authors.AddAsync(author);
             await DbContext.Books.AddAsync(book);
             await DbContext.SaveChangesAsync();
             
@@ -53,6 +59,32 @@ namespace SoftDelete.IntegrationTests.Tests
 
             var restoredBook = await DbContext.Books.FindAsync(bookId);
             restoredBook.ShouldNotBeNull();
+
+        }
+
+        [Fact]
+        public async Task CanHardRemove()
+        {
+            var book = TestHelper.CreateBook;
+            var author = TestHelper.CreateAuthor;
+
+            book.Author = author;
+
+            await DbContext.Authors.AddAsync(author);
+            await DbContext.Books.AddAsync(book);
+            await DbContext.SaveChangesAsync();
+            
+            var bookId = book.Id;
+            
+            
+            
+            DbContext.HardRemove(book);
+            await DbContext.SaveChangesAsync();
+
+            var deletedBook = await DbContext.Books.WithDeleted().FirstOrDefaultAsync(x => x.Id == bookId);
+            
+            deletedBook.ShouldBeNull();
+
 
         }
     }

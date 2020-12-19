@@ -58,7 +58,13 @@ namespace SoftDelete.IntegrationTests.Database
                     .HasOne(x => x.MainBook)
                     .WithOne(x => x.AuthorMainBook)
                     .OnDelete(DeleteBehavior.SetNull);
-                
+
+                entity
+                    .HasMany(x => x.Books)
+                    .WithOne(x => x.Author)
+                    .HasForeignKey(x => x.AuthorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
             });
 
         }

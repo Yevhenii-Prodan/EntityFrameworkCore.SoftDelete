@@ -41,6 +41,8 @@ namespace SoftDelete.IntegrationTests.Tests
         public async Task CascadeDelete_OneToMany()
         {
             var book = TestHelper.CreateBook;
+            var author = TestHelper.CreateAuthor;
+            book.Author = author;
 
             var review1 = TestHelper.CreateReview;
             var review2 = TestHelper.CreateReview;
@@ -50,7 +52,7 @@ namespace SoftDelete.IntegrationTests.Tests
             review2.Book = book;
             
             
-            await DbContext.AddRangeAsync(book, review1, review2);
+            await DbContext.AddRangeAsync(book, review1, review2, author);
             await DbContext.SaveChangesAsync();
 
             DbContext.Remove(book);
@@ -80,7 +82,7 @@ namespace SoftDelete.IntegrationTests.Tests
             
             await DbContext.SaveChangesAsync();
 
-            DbContext.Remove(book);
+            DbContext.Books.Remove(book);
             
             await DbContext.SaveChangesAsync();
 
@@ -94,6 +96,9 @@ namespace SoftDelete.IntegrationTests.Tests
         {
             var book = TestHelper.CreateBook;
             var user = TestHelper.CreateUser;
+            var author = TestHelper.CreateAuthor;
+
+            book.Author = author;
 
             var bookId = book.Id;
 
@@ -105,7 +110,7 @@ namespace SoftDelete.IntegrationTests.Tests
             };
 
 
-            await DbContext.AddRangeAsync(book, user, bookUser);
+            await DbContext.AddRangeAsync(book, user, bookUser, author);
             await DbContext.SaveChangesAsync();
 
 
@@ -123,6 +128,9 @@ namespace SoftDelete.IntegrationTests.Tests
         {
             var book = TestHelper.CreateBook;
             var user = TestHelper.CreateUser;
+
+            var author = TestHelper.CreateAuthor;
+            book.Author = author;
 
             user.FavouriteBook = book;
 
@@ -147,10 +155,12 @@ namespace SoftDelete.IntegrationTests.Tests
         public async Task SetNull_OneToOne()
         {
             var author = TestHelper.CreateAuthor;
+            var author2 = TestHelper.CreateAuthor;
 
             var book = TestHelper.CreateBook;
 
-            book.Author = author;
+
+            book.Author = author2;
             author.MainBook = book;
             
             
